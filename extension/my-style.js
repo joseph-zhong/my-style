@@ -35,12 +35,32 @@
     };
   }
 
+  /* Convenience wrappers for chrome local storage API
+   * Use 'chrome.storage.local' to disable chrome syncing
+   */
+  function localStore(key, value) {
+    let store = {};
+    store[key] = value;
+    chrome.storage.sync.set(store);
+  }
+  async function localLoad(key) {
+    return new Promise( (resolve, reject) => {
+      chrome.storage.sync.get(key, (items) => {
+        if (chrome.runtime.lastError) {
+          reject();
+        } else {
+          resolve(items[key]);
+        }
+      });
+    });
+  }
+
   /* Remove whitespace on the edges of this string. */
   String.prototype.trim = function() {
     return this.replace(/(^\s+|\s+$)/g, '');
   };
 
-  window.addEventListener('DOMContentLoaded', function(event) {
+  window.addEventListener('DOMContentLoaded', async function(event) {
     var head = document.getElementsByTagName('head')[0];
     var body = document.body;
 
@@ -58,6 +78,12 @@
     style.innerHTML = localStorage.myStyle || '';
     textarea.value = style.innerHTML;
     textarea.placeholder = '/* Enter your styles here. */';
+
+    let loadedStyle = await localLoad(document.domain);
+    if (loadedStyle) {
+        textarea.value = loadedStyle;
+        style.innerHTML = textarea.value;
+    }
 
     // alt + click on an element adds its selector to the textarea
     body.addEventListener('click', function(event) {
@@ -91,7 +117,7 @@
         // fill CSS with styles defined in the style attribute
         if (target.getAttribute('style')) {
           stylesList = target.getAttribute('style').split(';');
-        
+
           // keep track of CSS properties already defined in style attribute
           for (i = 0; i < stylesList.length; i++) {
             // condense mutliple whitespace into one space
@@ -103,7 +129,7 @@
             }
           }
         }
-        
+
         // construct text to add to textarea
         if (selector) {
           // add existing styles in braces
@@ -128,7 +154,7 @@
 
     /* Save styles persistently in local storage. */
     var saveStyles = throttle(function() {
-      localStorage.myStyle = style.innerHTML;
+      localStore(document.domain, style.innerHTML);
     }, 500);
 
     /* Updates styles with content in textarea and saves styles. */

@@ -13,7 +13,7 @@
     overflow: auto !important;
     outline: none !important;
     padding: 10px 20px !important;
-    display: block;
+    visibility: hidden;
 
     border-top: 0 !important;
     border-bottom: 0 !important;
